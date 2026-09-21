@@ -28,7 +28,7 @@ export function LaunchStep({ card }: { card: PostcardView }) {
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-night">
+    <div className="sky fixed inset-0 z-50">
       <JourneyGlobe card={card} mode="launch" />
 
       <motion.div
@@ -38,17 +38,17 @@ export function LaunchStep({ card }: { card: PostcardView }) {
         className="safe-bottom pointer-events-none absolute inset-x-0 bottom-0 px-6 pb-8"
       >
         <div className="mx-auto max-w-[520px] text-center">
-          <p className="font-display text-[26px] leading-tight text-night-ink">
+          <p className="font-display text-[26px] leading-tight text-ink">
             On its way to @{card.counterpart_username}.
           </p>
-          <p className="mt-2 text-[14px] text-night-ink-soft">
+          <p className="mt-2 text-[14px] text-ink-soft">
             {formatDistance(card.distance_km)}
             {eta ? ` · arriving in about ${eta}` : ""}
           </p>
 
           <Link
             href={`/postcards/${card.id}`}
-            className={`tap mt-7 inline-flex min-h-[46px] items-center justify-center rounded-full border border-night-line px-7 text-[15px] text-night-ink transition-colors hover:bg-white/5 ${
+            className={`tap mt-7 inline-flex min-h-[46px] items-center justify-center rounded-full border border-line/70 bg-paper/92 px-7 text-[15px] text-ink shadow-lift backdrop-blur transition-colors hover:bg-paper ${
               settled ? "pointer-events-auto" : ""
             }`}
           >

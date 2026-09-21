@@ -8,6 +8,9 @@ export type PostcardStatus =
 
 export type LocationPrecision = "exact" | "city" | "region";
 
+/** Which basemap the globes are drawn with. Stored per profile. */
+export type MapStyle = "streets" | "satellite";
+
 export type NotificationType = "postcard_arrived" | "postcard_opened";
 
 /** The front-of-card artwork, drawn in CSS/SVG from seeded reference data. */
@@ -48,6 +51,7 @@ export type Profile = {
   longitude: number | null;
   location_name: string | null;
   location_precision: LocationPrecision;
+  map_style: MapStyle;
   created_at: string;
   updated_at: string;
 }

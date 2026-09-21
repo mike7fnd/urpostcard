@@ -66,6 +66,21 @@ for (const table of tables) {
   record(status === 200 && count === 6, "six postcard designs seeded", `found ${count}`);
 }
 
+/* ---------------------------------------------------------- map style */
+
+{
+  const { status, body } = await call(
+    "/rest/v1/profiles?select=map_style&limit=1",
+    SECRET,
+  );
+  const present = status === 200;
+  record(
+    present,
+    "profiles.map_style column",
+    present ? "" : "missing — run migration 0007",
+  );
+}
+
 /* ------------------------------------------------------------- settings */
 
 {

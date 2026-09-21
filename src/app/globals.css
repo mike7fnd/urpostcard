@@ -21,6 +21,11 @@
   --color-accent: #a8563c;
   --color-accent-soft: #c98a72;
 
+  /* The air around the world. The globe hangs in daylight, not in space. */
+  --color-sky: #a9cde8;
+  --color-sky-deep: #6d9fc6;
+  --color-sky-high: #4d7fa8;
+
   --color-night: #0a0b0d;
   --color-night-soft: #14161a;
   --color-night-line: #23262c;
@@ -88,6 +93,16 @@ body[data-surface="night"] :focus-visible {
 }
 
 @layer utilities {
+  /* Daylight behind the globe: deeper overhead, paler towards the horizon. */
+  .sky {
+    background: linear-gradient(
+      180deg,
+      var(--color-sky-high) 0%,
+      var(--color-sky-deep) 42%,
+      var(--color-sky) 100%
+    );
+  }
+
   /* Fibrous paper: two crossed noise fields, cheap and resolution-free. */
   .paper-grain::after {
     content: "";

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import * as THREE from "three";
 
-import { IMAGERY_CREDIT, STREETS_CREDIT } from "@/lib/attribution";
+import { MAP_CREDITS } from "@/lib/attribution";
 import type { LatLng } from "@/lib/geo";
+import type { MapStyle } from "@/lib/types";
 
 /**
  * The world. The real one.
@@ -25,31 +26,25 @@ import type { LatLng } from "@/lib/geo";
  */
 
 /**
- * Two basemaps, because the globe does two different jobs.
+ * The two worlds a person can choose between, in Settings.
  *
- * `imagery` is for watching a postcard cross the world — photographic, dark,
- * wordless, something to fly over. It is useless for telling one suburb from
- * the next.
+ *   streets   OpenStreetMap, light. The default, and the only one with place
+ *             names on it — which is why the location picker is legible.
+ *   satellite Aerial imagery. Beautiful to fly a postcard over, useless for
+ *             telling one suburb from the next.
  *
- * `streets` is for pinning yourself: OpenStreetMap, with the place names,
- * roads and coastlines you need to say "yes, that one" with any confidence.
- *
- * Neither needs an API key. Both require attribution, rendered below.
+ * None needs an API key. All require attribution, rendered on every globe.
  *
  * Note on tile.openstreetmap.org: the OSMF tile policy asks that heavy or
- * commercial traffic not point at it. For production, swap the `streets` url
- * for an OSM-data mirror that welcomes app traffic — CARTO is a drop-in:
+ * commercial traffic not point at it. Before production, swap the `streets`
+ * url for an OSM-data mirror that welcomes app traffic. CARTO is a drop-in:
  *   https://a.basemaps.cartocdn.com/rastertiles/voyager/{level}/{x}/{y}.png
- * (credit then becomes "© OpenStreetMap contributors, © CARTO").
  */
-export type Basemap = "imagery" | "streets";
-
 const BASEMAPS: Record<
-  Basemap,
+  MapStyle,
   {
     url: (x: number, y: number, level: number) => string;
-    credit: string;
-    /** OSM already draws borders; over imagery we add our own hairlines. */
+    /** OSM draws its own borders; over imagery we add hairlines. */
     borders: boolean;
     atmosphere: string;
     /** How hard the edges are held back. Imagery can take far more. */
@@ -57,37 +52,24 @@ const BASEMAPS: Record<
     marks: { origin: string; destination: string; ring: string; route: string };
   }
 > = {
-  imagery: {
-    url: (x, y, level) =>
-      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${level}/${y}/${x}`,
-    credit: IMAGERY_CREDIT,
-    borders: true,
-    atmosphere: "#6f97bd",
-    vignette: 0.72,
-    marks: {
-      origin: "#ff8256",
-      destination: "#ffe9c6",
-      ring: "255,233,198",
-      route: "255,242,222",
-    },
-  },
   streets: {
     url: (x, y, level) => `https://tile.openstreetmap.org/${level}/${x}/${y}.png`,
-    credit: STREETS_CREDIT,
     borders: false,
     atmosphere: "#a8c6e0",
     // Light cartography: a heavy vignette would swallow the labels people are
     // reading to place themselves.
     vignette: 0.3,
-    marks: {
-      origin: "#a8563c",
-      destination: "#a8563c",
-      ring: "168,86,60",
-      route: "60,44,32",
-    },
+    marks: { origin: "#a8563c", destination: "#a8563c", ring: "168,86,60", route: "60,44,32" },
+  },
+  satellite: {
+    url: (x, y, level) =>
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${level}/${y}/${x}`,
+    borders: true,
+    atmosphere: "#6f97bd",
+    vignette: 0.72,
+    marks: { origin: "#ff8256", destination: "#ffe9c6", ring: "255,233,198", route: "255,242,222" },
   },
 };
-
 
 export interface GlobePoint {
   lat: number;
@@ -98,6 +80,8 @@ export interface GlobePoint {
 export interface GlobeApi {
   screenCoords: (lat: number, lng: number, altitude?: number) => { x: number; y: number } | null;
   pointOfView: (pov: { lat: number; lng: number; altitude: number }, ms?: number) => void;
+  /** Where the camera actually is — including after the viewer has moved it. */
+  currentPov: () => { lat: number; lng: number; altitude: number } | null;
 }
 
 export interface WorldGlobeProps {
@@ -120,7 +104,7 @@ export interface WorldGlobeProps {
    */
   maxTileLevel?: number;
   /** Which world to draw. See BASEMAPS. */
-  basemap?: Basemap;
+  basemap?: MapStyle;
   /**
    * Closest the camera may get, as a fraction of globe radius. The default
    * keeps cinematic surfaces at arm length; the picker needs to come right
@@ -129,6 +113,12 @@ export interface WorldGlobeProps {
   minAltitude?: number;
   /** Set false only when the host surface renders the credit itself. */
   showAttribution?: boolean;
+  /**
+   * Fired the moment the viewer takes hold of the globe themselves. A surface
+   * animating the camera should stop doing so when this arrives, or it will
+   * fight the hands on the other end.
+   */
+  onUserAdjust?: () => void;
   onSelect?: (coords: LatLng) => void;
   onReady?: (api: GlobeApi) => void;
   className?: string;
@@ -152,9 +142,10 @@ export default function WorldGlobe({
   autoRotate = false,
   interactive = true,
   maxTileLevel = 5,
-  basemap = "imagery",
+  basemap = "streets",
   minAltitude = 0.8,
   showAttribution = true,
+  onUserAdjust,
   onSelect,
   onReady,
   className = "",
@@ -163,6 +154,11 @@ export default function WorldGlobe({
   const holderRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [countries, setCountries] = useState<CountryFeature[]>([]);
+
+  // Read by the controls listener, which is attached once and outlives any
+  // particular render.
+  const adjustRef = useRef(onUserAdjust);
+  adjustRef.current = onUserAdjust;
 
   /* --- size to the container, and only to the container ------------------ */
   useEffect(() => {
@@ -230,7 +226,12 @@ export default function WorldGlobe({
 
     const controls = globe.controls();
     controls.enableZoom = interactive;
+    controls.enableRotate = interactive;
     controls.enablePan = false;
+
+    // OrbitControls fires this on pointer-down and on wheel, before it moves
+    // anything, which is exactly when a follow-cam should let go.
+    controls.addEventListener("start", () => adjustRef.current?.());
     controls.autoRotate = autoRotate;
     controls.autoRotateSpeed = 0.28;
     controls.enableDamping = true;
@@ -246,6 +247,7 @@ export default function WorldGlobe({
         return point && Number.isFinite(point.x) ? { x: point.x, y: point.y } : null;
       },
       pointOfView: (next, ms = 0) => globeRef.current?.pointOfView(next, ms),
+      currentPov: () => globeRef.current?.pointOfView() ?? null,
     });
   }, [autoRotate, interactive, maxTileLevel, minAltitude, onReady]);
 
@@ -367,7 +369,7 @@ export default function WorldGlobe({
 
       {showAttribution ? (
         <p className="pointer-events-none absolute bottom-1.5 right-2.5 text-[10px] leading-none text-white/35">
-          {world.credit}
+          {MAP_CREDITS[basemap]}
         </p>
       ) : null}
     </div>

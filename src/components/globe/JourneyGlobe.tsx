@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { GlobeStage } from "@/components/globe/GlobeStage";
 import type { GlobeApi } from "@/components/globe/WorldGlobe";
+import { useMapStyle } from "@/components/map/MapStyleProvider";
 import { Postcard } from "@/components/postcard/Postcard";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import {
@@ -56,15 +57,23 @@ export function JourneyGlobe({
   className?: string;
 }) {
   const reduced = usePrefersReducedMotion();
+  const mapStyle = useMapStyle();
   const [api, setApi] = useState<GlobeApi | null>(null);
 
-  const cardHolder = useRef<HTMLDivElement | null>(null);
+  const cardHolder = useRef<HTMLButtonElement | null>(null);
   const nameHolder = useRef<HTMLDivElement | null>(null);
   const settled = useRef(false);
   const startedAt = useRef<number | null>(null);
 
   const replaying = mode === "replay";
-  const follows = !reduced;
+
+  // The globe is the viewer's to move. Taking hold of it lets the postcard go;
+  // tapping the postcard takes hold of it again.
+  const [locked, setLocked] = useState(true);
+  const follows = locked && !reduced;
+
+  const tRef = useRef(0);
+  const resumeUntil = useRef(0);
 
   const origin = useMemo<LatLng>(
     () => ({ lat: card.origin_latitude, lng: card.origin_longitude }),
@@ -190,6 +199,21 @@ export function JourneyGlobe({
     return () => window.clearInterval(id);
   }, [replaying, onFlightEnd]);
 
+  /* ------------------------------------------------------ handing over the
+     camera, and taking it back */
+
+  const releaseToViewer = useCallback(() => setLocked(false), []);
+
+  /** Tap the postcard and the camera flies back to it, then rides along. */
+  const followPostcard = useCallback(() => {
+    setLocked(true);
+    if (!api) return;
+    // Ease back rather than cutting, and hold off the per-frame updates until
+    // that transition has played out.
+    resumeUntil.current = performance.now() + 900;
+    api.pointOfView(cameraAt(tRef.current, 1), 900);
+  }, [api, cameraAt]);
+
   /* --------------------------------------------- camera when not following */
 
   const [pov, setPov] = useState<{ lat: number; lng: number; altitude: number } | null>(
@@ -213,11 +237,11 @@ export function JourneyGlobe({
 
     /** Positions an overlay, and hides it when its point is over the horizon. */
     const place = (
-      el: HTMLDivElement | null,
+      el: HTMLElement | null,
       point: LatLng,
       pointAltitude: number,
       camera: { lat: number; lng: number; altitude: number },
-      apply: (el: HTMLDivElement, screen: { x: number; y: number }) => void,
+      apply: (el: HTMLElement, screen: { x: number; y: number }) => void,
     ) => {
       if (!el) return;
 
@@ -247,8 +271,17 @@ export function JourneyGlobe({
         ? easeInOutSine(Math.min(1, Math.max(0, (since - DESCENT_MS) / REPLAY_MS)))
         : progressNow(Date.now());
 
-      const camera = follows ? cameraAt(t, descent) : (pov ?? cameraAt(t, 1));
-      if (follows) api.pointOfView(camera, 0);
+      tRef.current = t;
+
+      // Unlocked, the camera belongs to whoever is dragging it, so the horizon
+      // test has to read where it actually ended up rather than where this
+      // component would have put it.
+      const camera = follows
+        ? cameraAt(t, descent)
+        : (api.currentPov() ?? pov ?? cameraAt(t, 1));
+
+      // A re-lock flies the camera back over a beat; do not stamp on it.
+      if (follows && clock >= resumeUntil.current) api.pointOfView(camera, 0);
 
       const here = interpolateGreatCircle(origin, destination, t);
       const altitude = cardAltitude * Math.sin(Math.PI * Math.min(1, Math.max(0, t)));
@@ -264,7 +297,7 @@ export function JourneyGlobe({
 
       place(nameHolder.current, destination, 0, camera, (el, screen) => {
         el.style.transform =
-          `translate3d(${screen.x}px, ${screen.y}px, 0) translate(-50%, -150%)`;
+          `translate3d(${screen.x}px, ${screen.y}px, 0) translate(-50%, -100%)`;
       });
 
       frame = requestAnimationFrame(draw);
@@ -319,7 +352,7 @@ export function JourneyGlobe({
     card.direction === "sent" ? `@${card.counterpart_username}` : "you";
 
   return (
-    <div className={`relative h-full w-full overflow-hidden bg-night ${className}`}>
+    <div className={`sky relative h-full w-full overflow-hidden ${className}`}>
       <GlobeStage
         trails={trailList}
         points={[]}
@@ -327,44 +360,72 @@ export function JourneyGlobe({
         povMs={1600}
         // Down at cruising height there has to be something to see: coarse
         // tiles at this range are a blur, and a blur does not look like motion.
+        basemap={mapStyle}
         maxTileLevel={10}
         // A short journey is watched from very low down. Leave this at the
         // default and the controls clamp the camera back out every frame,
         // which is what made the journey look frozen.
         minAltitude={0.0015}
-        interactive={false}
+        interactive
+        onUserAdjust={releaseToViewer}
         autoRotate={false}
         onReady={setApi}
       />
 
-      <div className="pointer-events-none absolute inset-0" aria-hidden>
+      <div className="pointer-events-none absolute inset-0">
         {/* the person it is going to, waiting at the far end */}
         <div
           ref={nameHolder}
           className="absolute left-0 top-0 opacity-0 will-change-transform"
+          aria-hidden
         >
-          <span
-            className="whitespace-nowrap text-[13px] tracking-[0.08em] text-white"
-            style={{
-              textShadow: "0 1px 10px rgb(0 0 0 / 0.9), 0 0 3px rgb(0 0 0 / 0.8)",
-            }}
-          >
-            {destinationName}
+          {/* A pill, not bare text: this has to stay legible over pale
+              streets, dark streets and photographed ground alike. */}
+          <span className="flex flex-col items-center gap-1">
+            <span className="whitespace-nowrap rounded-full bg-black/65 px-2.5 py-1 text-[12.5px] tracking-[0.06em] text-white backdrop-blur-[2px]">
+              {destinationName}
+            </span>
+            <span className="h-2 w-px bg-white/45" />
           </span>
         </div>
 
-        {/* the object in flight */}
-        <div
+        {/* the object in flight — and the way back to it */}
+        <button
+          type="button"
           ref={cardHolder}
-          className="absolute left-0 top-0 w-[150px] opacity-0 will-change-transform sm:w-[190px]"
+          onClick={followPostcard}
+          aria-label={
+            locked
+              ? "The postcard. The view is following it."
+              : "Follow the postcard again"
+          }
+          className="pointer-events-auto absolute left-0 top-0 w-[150px] cursor-pointer opacity-0 will-change-transform sm:w-[190px]"
           style={{
             perspective: "900px",
             filter: "drop-shadow(0 26px 34px rgb(0 0 0 / 0.55))",
           }}
         >
           <Postcard design={card.template_design_config} face="front" caption={null} />
-        </div>
+        </button>
       </div>
+
+      {/* Only offered once the viewer has taken the globe for themselves. */}
+      {!locked && !reduced ? (
+        <div className="safe-top pointer-events-none absolute inset-x-0 top-0 flex justify-center px-4 pt-4">
+          <button
+            type="button"
+            onClick={followPostcard}
+            className="tap pointer-events-auto inline-flex min-h-[40px] items-center gap-2 rounded-full border border-white/15 bg-black/55 px-4 text-[13px] text-white backdrop-blur transition-colors hover:bg-black/70"
+          >
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "#ff8256" }}
+              aria-hidden
+            />
+            Follow the postcard
+          </button>
+        </div>
+      ) : null}
 
       <p className="sr-only" role="status">
         {spoken >= 1

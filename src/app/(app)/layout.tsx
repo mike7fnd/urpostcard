@@ -1,3 +1,4 @@
+import { MapStyleProvider } from "@/components/map/MapStyleProvider";
 import { Nav } from "@/components/nav/Nav";
 import { ArrivalWatcher } from "@/components/notifications/ArrivalWatcher";
 import { requireOnboardedSession } from "@/lib/account";
@@ -18,10 +19,10 @@ export default async function AppLayout({
   const summary = await getSummary();
 
   return (
-    <>
+    <MapStyleProvider value={session.profile.map_style}>
       <ArrivalWatcher userId={session.userId} />
       {children}
       <Nav unopened={summary.unopened} />
-    </>
+    </MapStyleProvider>
   );
 }

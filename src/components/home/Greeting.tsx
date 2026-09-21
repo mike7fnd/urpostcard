@@ -23,7 +23,7 @@ export function Greeting({ name }: { name: string }) {
   const firstName = name.trim().split(/\s+/)[0] ?? "";
 
   return (
-    <h1 className="font-display text-[30px] leading-tight tracking-tight text-night-ink sm:text-[36px]">
+    <h1 className="font-display text-[30px] leading-tight tracking-tight text-ink sm:text-[36px]">
       {phrase ? `${phrase}, ${firstName}.` : `${firstName}.`}
     </h1>
   );

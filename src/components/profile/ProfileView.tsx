@@ -6,15 +6,42 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { LocationPicker, type PickedLocation } from "@/components/location/LocationPicker";
+import { MAP_STYLE_CHOICES } from "@/components/map/MapStyleProvider";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Notice } from "@/components/ui/Notice";
 import { humanError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile } from "@/lib/types";
+import type { MapStyle, Profile } from "@/lib/types";
 import { normalizeUsername, validateUsername } from "@/lib/username";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
+/**
+ * A scrap of each world, drawn rather than fetched — a settings screen has no
+ * business booting WebGL or pulling tiles just to show three thumbnails.
+ */
+function MapSwatch({ style }: { style: MapStyle }) {
+  const palette =
+    style === "satellite"
+      ? { sea: "#16303f", land: "#3f5133", road: "#6b7a52", ink: "#dfe6d6" }
+      : { sea: "#cfe0ef", land: "#eee8dc", road: "#ffffff", ink: "#9c9483" };
+
+  return (
+    <span
+      className="block aspect-[4/3] w-full overflow-hidden rounded-xl"
+      aria-hidden
+    >
+      <svg viewBox="0 0 64 48" className="h-full w-full">
+        <rect width="64" height="48" fill={palette.sea} />
+        <path d="M0 30 C 14 22, 22 34, 36 28 S 56 18, 64 24 L64 48 L0 48 Z" fill={palette.land} />
+        <path d="M0 38 C 16 32, 28 42, 44 36 S 58 30, 64 33" stroke={palette.road} strokeWidth="1.6" fill="none" />
+        <path d="M22 48 L26 33 L34 26" stroke={palette.road} strokeWidth="1.2" fill="none" />
+        <circle cx="46" cy="16" r="2" fill={palette.ink} opacity="0.7" />
+      </svg>
+    </span>
+  );
+}
 
 export function ProfileView({ profile }: { profile: Profile }) {
   const router = useRouter();
@@ -26,6 +53,9 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [movingPin, setMovingPin] = useState(false);
+  // Held locally so the choice lands the instant it is tapped; the refresh
+  // below re-reads it from the profile for every other globe in the app.
+  const [mapStyle, setMapStyle] = useState<MapStyle>(profile.map_style);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
   const usernameProblem = username ? validateUsername(username) : null;
@@ -103,6 +133,28 @@ export function ProfileView({ profile }: { profile: Profile }) {
     }
 
     setAvatarUrl(publicUrl);
+    router.refresh();
+  }
+
+  async function saveMapStyle(next: MapStyle) {
+    if (next === mapStyle) return;
+
+    const previous = mapStyle;
+    setMapStyle(next);
+    setError(null);
+
+    const supabase = createClient();
+    const { error: saveError } = await supabase
+      .from("profiles")
+      .update({ map_style: next })
+      .eq("id", profile.id);
+
+    if (saveError) {
+      setMapStyle(previous);
+      setError(humanError(saveError));
+      return;
+    }
+
     router.refresh();
   }
 
@@ -239,6 +291,47 @@ export function ProfileView({ profile }: { profile: Profile }) {
         </button>
       </section>
 
+      {/* the world */}
+      <section className="mt-12 border-t border-line pt-8">
+        <p className="text-[12px] uppercase tracking-[0.16em] text-ink-faint">
+          How the world looks
+        </p>
+        <p className="mt-2 max-w-[40ch] text-[13.5px] leading-relaxed text-ink-faint">
+          Used for every globe — picking your place, and watching a postcard
+          cross. Only the two map styles carry place names.
+        </p>
+
+        <div
+          className="mt-5 grid grid-cols-2 gap-3"
+          role="radiogroup"
+          aria-label="Map style"
+        >
+          {MAP_STYLE_CHOICES.map((choice) => {
+            const active = mapStyle === choice.value;
+            return (
+              <button
+                key={choice.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => saveMapStyle(choice.value)}
+                className={`tap rounded-2xl border p-2 text-left transition-colors ${
+                  active
+                    ? "border-ink"
+                    : "border-line hover:border-ink-faint"
+                }`}
+              >
+                <MapSwatch style={choice.value} />
+                <span className="mt-2 block text-[13px] text-ink">{choice.name}</span>
+                <span className="mt-0.5 block text-[11.5px] leading-snug text-ink-faint">
+                  {choice.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       {/* out */}
       <section className="mt-12 border-t border-line pt-8">
         <form action="/auth/sign-out" method="post">
@@ -275,13 +368,13 @@ export function ProfileView({ profile }: { profile: Profile }) {
               onConfirm={savePlace}
             >
               <div className="flex items-start justify-between gap-4">
-                <h2 className="font-display text-[26px] leading-tight text-night-ink">
+                <h2 className="font-display text-[26px] leading-tight text-ink drop-shadow-[0_1px_10px_rgba(255,255,255,0.85)]">
                   Where should your postcards find you?
                 </h2>
                 <button
                   type="button"
                   onClick={() => setMovingPin(false)}
-                  className="tap min-h-[44px] shrink-0 rounded-full border border-night-line px-4 text-[14px] text-night-ink-soft"
+                  className="tap min-h-[44px] shrink-0 rounded-full border border-line/70 bg-paper/90 px-4 text-[14px] text-ink-soft backdrop-blur"
                 >
                   Cancel
                 </button>

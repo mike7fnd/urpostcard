@@ -34,14 +34,14 @@ Run the files in `supabase/migrations/` **in order**. The quickest way is one
 paste:
 
 ```bash
-npm run db:bundle    # writes supabase/bundle.sql — all six, in order
+npm run db:bundle    # writes supabase/bundle.sql — all seven, in order
 ```
 
 Paste that into the SQL editor and run it. Or `supabase db push` with the CLI.
 Afterwards:
 
 ```bash
-npm run db:verify    # 22 checks: schema, seeded designs, every RPC, and RLS
+npm run db:verify    # 23 checks: schema, seeded designs, every RPC, and RLS
 ```
 
 | File | What it does |
@@ -52,6 +52,7 @@ npm run db:verify    # 22 checks: schema, seeded designs, every RPC, and RLS
 | `0004_rls.sql` | row level security and function grants |
 | `0005_seed_templates.sql` | the six postcard designs (reference data) |
 | `0006_storage.sql` | the avatars bucket and its policies |
+| `0007_map_style.sql` | the per-profile map style preference |
 
 They are written to be re-runnable.
 
@@ -134,18 +135,22 @@ a scalar, not a pin.
 
 `JourneyGlobe` runs in two registers, and the difference is the whole point:
 
-- **observe** — where the postcard actually is, from `sent_at` and
-  `estimated_delivery_at`. Across a real journey of hours it barely moves, and
-  that is correct. When the clock passes the estimate it calls
-  `onSettlementDue`, the page re-reads the database, and the *server's* answer
-  decides what is rendered.
-- **launch / replay** — a flight *of* that journey, played over ~15 seconds.
-  The camera flies the great circle with the card, so the world turns beneath
-  it from one pin to the other. Cinema, not state: it never means the postcard
-  arrived, and the copy beside it always gives the real time remaining.
+- **live** (launch, observe) — the movement is fitted to the real delivery. An
+  eight-minute journey takes eight minutes to cross, read off `sent_at` and
+  `estimated_delivery_at` per frame. When the clock passes the estimate it
+  calls `onSettlementDue`, the page re-reads the database, and the *server's*
+  answer decides what is rendered.
+- **replay** — the same route compressed into ~13 seconds, offered only for a
+  journey that already finished, and labelled as a replay.
 
 Close the browser mid-journey and reopen it a day later: the postcard is where
 the database says it is, not where an animation left off.
+
+The camera sits directly over the card, so the postcard holds the centre of
+frame and the world turns underneath it, with a running dashed line ahead of it
+to the recipient. Take hold of the globe and the camera lets go — wired to
+OrbitControls' `start` event, which fires before it moves anything. Tap the
+postcard, or the chip that appears, and the camera flies back and resumes.
 
 ### The globe
 
@@ -153,17 +158,24 @@ the database says it is, not where an animation left off.
 `ssr: false` — WebGL, three.js, the country atlas and the first map tile are
 fetched only when a globe actually mounts.
 
-There are **two real basemaps**, because the globe does two different jobs:
+**Three basemaps, chosen by the person**, in Settings. The choice lives on the
+profile (`profiles.map_style`), not in browser storage, so it follows them
+between devices and the server can render the first globe in the right style
+rather than flashing the default while a preference loads.
 
-| Basemap | Source | Used for |
+| Style | Source | |
 | --- | --- | --- |
-| `imagery` | Esri World Imagery | the journey and the home globe — photographic, wordless, something to fly over |
-| `streets` | OpenStreetMap | the location picker — place names, roads and coastlines you can pin yourself against |
+| `streets` | OpenStreetMap | the default — place names and roads |
+| `dark` | CARTO dark, OSM data | the same map for a darker room |
+| `satellite` | Esri World Imagery | aerial imagery, no labels |
 
-Satellite photography is lovely to cross a planet over and useless for telling
-one suburb from the next, so the one screen that asks *"which of these is
-mine?"* gets labelled cartography instead. Neither needs an API key. Both
-require attribution, and it is rendered on every globe.
+None needs an API key. All require attribution, rendered on every globe, and
+each carries its own marker palette, atmosphere tint and vignette strength —
+pale cream markers that read against satellite are invisible on a light map.
+
+The style applies everywhere, including the location picker. Worth knowing
+that satellite has no labels, which makes pinning yourself harder; that is the
+viewer's call to make.
 
 Tiles are reprojected onto the sphere by three-globe's tile engine. Detail and
 how close the camera may come are capped per surface, and the two have to
@@ -172,7 +184,7 @@ agree — otherwise a surface requests tiles it can never get near enough to see
 | Surface | `maxTileLevel` | `minAltitude` |
 | --- | --- | --- |
 | Home | 4 | 0.8 |
-| Journey | 9 | 0.01 |
+| Journey | 10 | 0.0015 |
 | Location picker | 14 | 0.012 |
 
 `minAltitude` is not cosmetic. It becomes `controls.minDistance`, which clamps

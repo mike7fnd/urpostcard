@@ -36,7 +36,14 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+// Typed explicitly rather than with Next's generated `LayoutProps`, which only
+// exists once .next/types has been written — `npm run typecheck` has to work
+// on a clean checkout, before anything has been built.
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"

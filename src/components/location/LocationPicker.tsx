@@ -6,7 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GlobeStage } from "@/components/globe/GlobeStage";
 import type { GlobeApi } from "@/components/globe/WorldGlobe";
 import { Button } from "@/components/ui/Button";
-import { PLACES_CREDIT, STREETS_CREDIT } from "@/lib/attribution";
+import { useMapStyle } from "@/components/map/MapStyleProvider";
+import { MAP_CREDITS, PLACES_CREDIT } from "@/lib/attribution";
 import { coarsen } from "@/lib/geo";
 import type { GeoPlace } from "@/lib/types";
 
@@ -38,6 +39,7 @@ export function LocationPicker({
   /** Heading area rendered above the search field. */
   children?: React.ReactNode;
 }) {
+  const mapStyle = useMapStyle();
   const [pin, setPin] = useState<PickedLocation | null>(initial ?? null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoPlace[]>([]);
@@ -106,14 +108,14 @@ export function LocationPicker({
   }
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-night text-night-ink">
+    <div className="sky relative h-dvh w-full overflow-hidden">
       <div className="absolute inset-0">
         <GlobeStage
           interactive
           // Labelled cartography, because this is the one screen where the
           // question is "which of these is mine?" and photography cannot
           // answer it. Deep enough to read street and neighbourhood names.
-          basemap="streets"
+          basemap={mapStyle}
           maxTileLevel={14}
           // Close enough to put the pin on the right side of a river.
           minAltitude={0.012}
@@ -146,7 +148,7 @@ export function LocationPicker({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search for a town or city"
               autoComplete="off"
-              className="min-h-[48px] w-full rounded-full border border-night-line bg-night-soft/90 px-5 text-[15px] text-night-ink backdrop-blur placeholder:text-night-ink-soft focus:border-night-ink-soft focus:outline-none"
+              className="min-h-[48px] w-full rounded-full border border-line/70 bg-paper/92 px-5 text-[15px] text-ink shadow-lift-sm backdrop-blur placeholder:text-ink-faint focus:border-ink-faint focus:outline-none"
             />
 
             <AnimatePresence>
@@ -156,14 +158,14 @@ export function LocationPicker({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.2 }}
-                  className="mt-2 overflow-hidden rounded-2xl border border-night-line bg-night-soft/95 backdrop-blur"
+                  className="mt-2 overflow-hidden rounded-2xl border border-line/70 bg-paper/95 shadow-lift backdrop-blur"
                 >
                   {results.map((place) => (
                     <li key={`${place.latitude},${place.longitude},${place.name}`}>
                       <button
                         type="button"
                         onClick={() => choosePlace(place)}
-                        className="min-h-[48px] w-full px-5 py-3 text-left text-[15px] text-night-ink transition-colors hover:bg-white/5"
+                        className="min-h-[48px] w-full px-5 py-3 text-left text-[15px] text-ink transition-colors hover:bg-paper-deep"
                       >
                         {place.name}
                       </button>
@@ -174,7 +176,7 @@ export function LocationPicker({
             </AnimatePresence>
 
             {searching && results.length === 0 ? (
-              <p className="mt-3 px-2 text-[13px] text-night-ink-soft">Looking…</p>
+              <p className="mt-3 px-2 text-[13px] text-ink-soft">Looking…</p>
             ) : null}
           </div>
         </div>
@@ -191,22 +193,22 @@ export function LocationPicker({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 24 }}
                 transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
-                className="rounded-3xl border border-night-line bg-night-soft/95 p-5 backdrop-blur"
+                className="rounded-3xl border border-line/70 bg-paper/95 p-5 shadow-lift backdrop-blur"
               >
-                <p className="text-[12px] uppercase tracking-[0.16em] text-night-ink-soft">
+                <p className="text-[12px] uppercase tracking-[0.16em] text-ink-faint">
                   Your postcards arrive at
                 </p>
-                <p className="mt-1.5 font-display text-[24px] leading-tight text-night-ink">
+                <p className="mt-1.5 font-display text-[24px] leading-tight text-ink">
                   {naming ? "…" : pin.name || "An unnamed place"}
                 </p>
-                <p className="mt-3 text-[13px] leading-relaxed text-night-ink-soft">
+                <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">
                   Others will only ever see this name. The pin is rounded to about
                   a kilometre and used to work out how far a postcard has to travel.
                 </p>
 
                 <div className="mt-5 flex gap-3">
                   <Button
-                    variant="night"
+                    variant="primary"
                     className="flex-1"
                     loading={busy}
                     disabled={naming}
@@ -216,7 +218,7 @@ export function LocationPicker({
                   </Button>
                   <Button
                     variant="ghost"
-                    className="text-night-ink-soft hover:text-night-ink"
+                    className="text-ink-soft hover:text-ink"
                     onClick={() => setPin(null)}
                   >
                     Move it
@@ -229,7 +231,7 @@ export function LocationPicker({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="pb-2 text-center text-[14px] text-night-ink-soft"
+                className="pb-2 text-center text-[14px] text-ink drop-shadow-[0_1px_6px_rgba(255,255,255,0.9)]"
               >
                 Turn the globe and tap where you are, or search above.
               </motion.p>
@@ -238,8 +240,8 @@ export function LocationPicker({
 
           {/* Rendered here rather than by the globe, where the bottom sheet
               would cover it once a pin is dropped. */}
-          <p className="mt-3 text-center text-[11px] leading-relaxed text-night-ink-soft/60">
-            {STREETS_CREDIT} · {PLACES_CREDIT}
+          <p className="mt-3 text-center text-[11px] leading-relaxed text-ink-soft/80">
+            {MAP_CREDITS[mapStyle]} · {PLACES_CREDIT}
           </p>
         </div>
       </div>

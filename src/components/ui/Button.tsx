@@ -2,7 +2,7 @@
 
 import { forwardRef } from "react";
 
-type Variant = "primary" | "quiet" | "ghost" | "night";
+type Variant = "primary" | "quiet" | "ghost";
 
 const BASE =
   "relative inline-flex min-h-[46px] items-center justify-center gap-2 rounded-full px-6 " +
@@ -13,7 +13,6 @@ const VARIANTS: Record<Variant, string> = {
   primary: "bg-ink text-paper hover:bg-ink/90",
   quiet: "bg-paper-deep text-ink hover:bg-paper-edge",
   ghost: "px-3 text-ink-soft hover:text-ink",
-  night: "bg-night-ink text-night hover:bg-white",
 };
 
 export interface ButtonProps

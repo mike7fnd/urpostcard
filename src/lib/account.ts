@@ -11,7 +11,11 @@ export interface Session {
   profile: Profile;
 }
 
-export function profileIsComplete(profile: Profile | null): profile is Profile {
+// Returns a plain boolean rather than a type predicate: the argument is
+// already a Profile, so a predicate narrows the *false* branch to `never` and
+// makes the incomplete profile unusable — which is exactly the branch that
+// needs it.
+export function profileIsComplete(profile: Profile | null): boolean {
   return Boolean(
     profile &&
       profile.username &&

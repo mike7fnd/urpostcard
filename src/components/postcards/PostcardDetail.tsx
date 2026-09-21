@@ -37,7 +37,9 @@ export function PostcardDetail({ card }: { card: PostcardView }) {
   const [face, setFace] = useState<"front" | "back">(
     card.message_available ? "back" : "front",
   );
-  const [replaying, setReplaying] = useState(false);
+  // One overlay, two reasons to open it: watching the real journey full
+  // screen, or replaying a finished one.
+  const [overlay, setOverlay] = useState<null | "live" | "replay">(null);
 
   const travelling = card.status === "in_transit";
   const onSettlementDue = useCallback(() => router.refresh(), [router]);
@@ -99,8 +101,17 @@ export function PostcardDetail({ card }: { card: PostcardView }) {
       {/* where it is */}
       {travelling ? (
         <div className="mt-8 overflow-hidden rounded-3xl border border-line/70">
-          <div className="h-[280px] w-full sm:h-[340px]">
+          <div className="relative h-[280px] w-full sm:h-[340px]">
             <JourneyGlobe card={card} mode="observe" onSettlementDue={onSettlementDue} />
+
+            <button
+              type="button"
+              onClick={() => setOverlay("live")}
+              aria-label="Watch it travel full screen"
+              className="tap absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-line/70 bg-paper/92 text-ink shadow-lift backdrop-blur transition-colors hover:bg-paper"
+            >
+              <ExpandIcon />
+            </button>
           </div>
           <div className="bg-paper-deep/60 px-5 py-4">
             <p className="text-[14px] text-ink">
@@ -145,7 +156,7 @@ export function PostcardDetail({ card }: { card: PostcardView }) {
       {!travelling ? (
         <button
           type="button"
-          onClick={() => setReplaying(true)}
+          onClick={() => setOverlay("replay")}
           className="tap mt-8 min-h-[46px] rounded-full border border-line px-6 text-[14px] text-ink-soft transition-colors hover:border-ink-faint hover:text-ink"
         >
           Replay the journey
@@ -153,19 +164,23 @@ export function PostcardDetail({ card }: { card: PostcardView }) {
       ) : null}
 
       <AnimatePresence>
-        {replaying ? (
+        {overlay ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="fixed inset-0 z-50 bg-night"
+            className="sky fixed inset-0 z-50"
           >
-            <JourneyGlobe card={card} mode="replay" />
+            <JourneyGlobe
+              card={card}
+              mode={overlay === "replay" ? "replay" : "observe"}
+              onSettlementDue={onSettlementDue}
+            />
             <button
               type="button"
-              onClick={() => setReplaying(false)}
-              className="safe-top tap absolute right-4 top-4 z-10 min-h-[44px] rounded-full border border-night-line bg-night-soft/80 px-5 text-[14px] text-night-ink backdrop-blur"
+              onClick={() => setOverlay(null)}
+              className="safe-top tap absolute right-4 top-4 z-10 min-h-[44px] rounded-full border border-line/70 bg-paper/92 px-5 text-[14px] text-ink shadow-lift backdrop-blur"
             >
               Close
             </button>
@@ -184,5 +199,20 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       </dt>
       <dd className="text-right text-[15px] text-ink">{children}</dd>
     </div>
+  );
+}
+
+function ExpandIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-[17px] w-[17px]" aria-hidden focusable="false">
+      <path
+        d="M12 3h5v5M8 17H3v-5M17 3l-6 6M3 17l6-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

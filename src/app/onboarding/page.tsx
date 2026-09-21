@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { MapStyleProvider } from "@/components/map/MapStyleProvider";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import { profileIsComplete, requireSession } from "@/lib/account";
 
@@ -10,5 +11,9 @@ export default async function OnboardingPage() {
 
   if (profileIsComplete(profile)) redirect("/home");
 
-  return <OnboardingFlow profile={profile} />;
+  return (
+    <MapStyleProvider value={profile.map_style}>
+      <OnboardingFlow profile={profile} />
+    </MapStyleProvider>
+  );
 }

@@ -17,16 +17,16 @@ const WorldGlobe = dynamic(() => import("@/components/globe/WorldGlobe"), {
 
 function GlobeVeil({ message }: { message?: string }) {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-night">
+    <div className="sky flex h-full w-full items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div
-          className="h-16 w-16 rounded-full border border-night-line"
+          className="h-16 w-16 rounded-full border border-white/30"
           style={{
             background:
-              "radial-gradient(circle at 34% 30%, #1b222a, #0b0f14 68%)",
+              "radial-gradient(circle at 34% 30%, #cfe4f3, #6d9fc6 68%)",
           }}
         />
-        <p className="text-[13px] tracking-wide text-night-ink-soft">
+        <p className="text-[13px] tracking-wide text-white/80">
           {message ?? "Finding the world…"}
         </p>
       </div>

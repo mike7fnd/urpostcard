@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { GlobeStage } from "@/components/globe/GlobeStage";
+import { useMapStyle } from "@/components/map/MapStyleProvider";
 import type { GlobePoint } from "@/components/globe/WorldGlobe";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { journeyProgress } from "@/lib/delivery";
@@ -23,6 +24,7 @@ export function HomeGlobe({
   inFlight: PostcardView[];
 }) {
   const reduced = usePrefersReducedMotion();
+  const mapStyle = useMapStyle();
   const [, setTick] = useState(0);
 
   // Trails creep forward; once a minute is far more than enough to see it.
@@ -87,6 +89,7 @@ export function HomeGlobe({
       povMs={2600}
       autoRotate={!reduced}
       interactive={false}
+      basemap={mapStyle}
       maxTileLevel={4}
     />
   );
