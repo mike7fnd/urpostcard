@@ -38,8 +38,8 @@ export const SUPABASE_SERVICE_ROLE_KEY = () =>
     process.env.SUPABASE_SERVICE_ROLE_KEY,
   );
 
-export const SITE_URL = () =>
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+// NEXT_PUBLIC_SITE_URL is read directly by lib/url.ts, which needs to weigh it
+// against the live request host rather than take it at face value.
 
 /** Nominatim's usage policy requires an identifying User-Agent. */
 export const GEOCODER_USER_AGENT = () =>
