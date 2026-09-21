@@ -32,7 +32,11 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
         {label}
       </label>
 
-      <div className="mt-2 flex items-baseline gap-1 border-b border-line focus-within:border-ink">
+      <div
+        className={`mt-2 flex items-baseline gap-1 border-b focus-within:border-ink ${
+          rest.disabled ? "border-line/60" : "border-line"
+        }`}
+      >
         {prefix ? (
           <span className="text-[17px] text-ink-faint" aria-hidden>
             {prefix}
@@ -43,7 +47,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
           id={id}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy || undefined}
-          className="min-h-[44px] w-full bg-transparent text-[17px] text-ink outline-none placeholder:text-ink-faint/70"
+          className="min-h-[44px] w-full bg-transparent text-[17px] text-ink outline-none placeholder:text-ink-faint/70 disabled:cursor-not-allowed disabled:text-ink-faint"
           {...rest}
         />
       </div>

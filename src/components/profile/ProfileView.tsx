@@ -13,6 +13,12 @@ import { Notice } from "@/components/ui/Notice";
 import { humanError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/client";
 import type { MapStyle, Profile } from "@/lib/types";
+import {
+  DISPLAY_NAME_COOLDOWN_DAYS,
+  USERNAME_COOLDOWN_DAYS,
+  describeWindow,
+  renameWindow,
+} from "@/lib/renames";
 import { normalizeUsername, validateUsername } from "@/lib/username";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -58,6 +64,17 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [mapStyle, setMapStyle] = useState<MapStyle>(profile.map_style);
   const fileInput = useRef<HTMLInputElement | null>(null);
 
+  // Both are enforced by the profiles trigger; read here so the form can say
+  // when, instead of letting someone type a new name and then refusing it.
+  const usernameWindow = renameWindow(
+    profile.username_changed_at,
+    USERNAME_COOLDOWN_DAYS,
+  );
+  const nameWindow = renameWindow(
+    profile.display_name_changed_at,
+    DISPLAY_NAME_COOLDOWN_DAYS,
+  );
+
   const usernameProblem = username ? validateUsername(username) : null;
   const dirty =
     displayName !== profile.display_name ||
@@ -77,9 +94,18 @@ export function ProfileView({ profile }: { profile: Profile }) {
 
     setSaving(true);
     const supabase = createClient();
+
+    const changes: { display_name?: string; username?: string } = {};
+    if (displayName.trim() !== profile.display_name) {
+      changes.display_name = displayName.trim();
+    }
+    if (candidate !== (profile.username ?? "")) {
+      changes.username = candidate;
+    }
+
     const { error: saveError } = await supabase
       .from("profiles")
-      .update({ display_name: displayName.trim(), username: candidate })
+      .update(changes)
       .eq("id", profile.id);
 
     setSaving(false);
@@ -240,6 +266,11 @@ export function ProfileView({ profile }: { profile: Profile }) {
             maxLength={60}
             onChange={(e) => setDisplayName(e.target.value)}
             autoComplete="name"
+            disabled={!nameWindow.allowed}
+            hint={
+              describeWindow(nameWindow, "name") ??
+              `Can be changed once every ${DISPLAY_NAME_COOLDOWN_DAYS} days.`
+            }
           />
 
           <Field
@@ -250,8 +281,12 @@ export function ProfileView({ profile }: { profile: Profile }) {
             autoCapitalize="none"
             spellCheck={false}
             onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))}
+            disabled={!usernameWindow.allowed}
             error={usernameProblem}
-            hint="Changing this changes how people address postcards to you."
+            hint={
+              describeWindow(usernameWindow, "username") ??
+              `How people address postcards to you. Can be changed once every ${USERNAME_COOLDOWN_DAYS} days.`
+            }
           />
 
           <Notice>{error}</Notice>

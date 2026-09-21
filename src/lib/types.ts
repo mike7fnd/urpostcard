@@ -52,6 +52,9 @@ export type Profile = {
   location_name: string | null;
   location_precision: LocationPrecision;
   map_style: MapStyle;
+  /** Last change from one value to another; null if only ever set. */
+  username_changed_at: string | null;
+  display_name_changed_at: string | null;
   created_at: string;
   updated_at: string;
 }

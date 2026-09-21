@@ -29,6 +29,10 @@ const COLOURS: Record<Surface, string> = {
 };
 
 function apply(surface: Surface) {
+  // Both elements: the safe areas at the top and bottom of an installed app
+  // fall back to the root background, and styling only <body> leaves a band of
+  // the wrong colour along the home indicator.
+  document.documentElement.dataset.surface = surface;
   document.body.dataset.surface = surface;
 
   let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');

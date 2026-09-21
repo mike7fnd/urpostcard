@@ -62,6 +62,12 @@ body {
   height: 100%;
 }
 
+/* The root carries the colour too, so the safe areas an installed app draws
+   into are never a different shade from the screen above them. */
+html {
+  background-color: var(--color-paper);
+}
+
 body {
   background-color: var(--color-paper);
   color: var(--color-ink);
@@ -77,8 +83,16 @@ body {
  * element filling the screen — so a full-bleed globe needs the body to be sky
  * too, or it gets a cream band across the top.
  */
+html[data-surface="sky"],
 body[data-surface="sky"] {
-  background-color: var(--color-sky-high);
+  /* The same gradient the screen itself uses, so the edges match whichever
+     end of it happens to be showing. */
+  background: linear-gradient(
+    180deg,
+    var(--color-sky-high) 0%,
+    var(--color-sky-deep) 42%,
+    var(--color-sky) 100%
+  );
 }
 
 ::selection {

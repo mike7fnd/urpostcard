@@ -34,14 +34,14 @@ Run the files in `supabase/migrations/` **in order**. The quickest way is one
 paste:
 
 ```bash
-npm run db:bundle    # writes supabase/bundle.sql — all seven, in order
+npm run db:bundle    # writes supabase/bundle.sql — all eight, in order
 ```
 
 Paste that into the SQL editor and run it. Or `supabase db push` with the CLI.
 Afterwards:
 
 ```bash
-npm run db:verify    # 23 checks: schema, seeded designs, every RPC, and RLS
+npm run db:verify    # 24 checks: schema, seeded designs, every RPC, and RLS
 ```
 
 | File | What it does |
@@ -53,6 +53,7 @@ npm run db:verify    # 23 checks: schema, seeded designs, every RPC, and RLS
 | `0005_seed_templates.sql` | the six postcard designs (reference data) |
 | `0006_storage.sql` | the avatars bucket and its policies |
 | `0007_map_style.sql` | the per-profile map style preference |
+| `0008_rename_limits.sql` | cooldowns on changing a username or display name |
 
 They are written to be re-runnable.
 
@@ -171,6 +172,17 @@ covers the **sender only**, and the message is withheld from the projection as
 well — belt and braces.
 
 A sender watches their own postcard the whole way. It is their journey to see.
+
+### A username is an address, so it holds still
+
+Thirty days between username changes, seven between display name changes,
+enforced in `profiles_before_write`. People write a username on postcards, and
+anything in flight was addressed to whoever held it when it was sent.
+
+Choosing a name for the first time is not a change, so onboarding is never
+blocked and a typo made there can still be fixed once. The interface reads the
+same timestamps to say *when* a name can change again, rather than letting
+someone type a new one and only then be refused.
 
 ### Locations are coarse before they are stored
 

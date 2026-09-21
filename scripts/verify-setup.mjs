@@ -81,6 +81,21 @@ for (const table of tables) {
   );
 }
 
+/* ------------------------------------------------------ rename cooldowns */
+
+{
+  const { status } = await call(
+    "/rest/v1/profiles?select=username_changed_at,display_name_changed_at&limit=1",
+    SECRET,
+  );
+  const present = status === 200;
+  record(
+    present,
+    "profiles rename-cooldown columns",
+    present ? "" : "missing — run migration 0008",
+  );
+}
+
 /* ------------------------------------------------------------- settings */
 
 {

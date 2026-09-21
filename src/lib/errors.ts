@@ -15,6 +15,10 @@ const COPY: Record<string, string> = {
   POSTCARD_NOT_FOUND: "That postcard is not yours to read.",
   POSTCARD_IN_TRANSIT: "It has not arrived yet.",
   USERNAME_RESERVED: "That one is spoken for.",
+  USERNAME_TOO_SOON:
+    "You changed your username recently. It can be changed again 30 days after the last time.",
+  DISPLAY_NAME_TOO_SOON:
+    "You changed your name recently. It can be changed again 7 days after the last time.",
   RATE_LIMITED: "That is a lot of postcards. Try again in a little while.",
 
   // Auth, from Supabase
