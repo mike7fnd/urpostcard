@@ -1,26 +1,187 @@
 @import "tailwindcss";
 
+/* --------------------------------------------------------------------------
+   urpostcard design tokens
+
+   Two surfaces, and only two: paper and night. Paper is where writing,
+   reading and history happen. Night is the world — the globe lives on it.
+   Everything else is typography and whitespace.
+   -------------------------------------------------------------------------- */
+
+@theme {
+  --color-paper: #f6f3ec;
+  --color-paper-deep: #ece7db;
+  --color-paper-edge: #dfd8c8;
+
+  --color-ink: #16150f;
+  --color-ink-soft: #57544a;
+  --color-ink-faint: #918c7f;
+  --color-line: #ddd6c7;
+
+  --color-accent: #a8563c;
+  --color-accent-soft: #c98a72;
+
+  --color-night: #0a0b0d;
+  --color-night-soft: #14161a;
+  --color-night-line: #23262c;
+  --color-night-ink: #eae7df;
+  --color-night-ink-soft: #8d9199;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument), Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+
+  /* Physical objects cast soft, layered shadows — never a single hard blur. */
+  --shadow-lift-sm: 0 1px 2px rgb(22 21 15 / 0.06), 0 4px 10px rgb(22 21 15 / 0.05);
+  --shadow-lift: 0 2px 4px rgb(22 21 15 / 0.07), 0 10px 26px rgb(22 21 15 / 0.09);
+  --shadow-lift-lg: 0 6px 12px rgb(22 21 15 / 0.1), 0 26px 60px rgb(22 21 15 / 0.16);
+  --shadow-flight: 0 30px 70px rgb(0 0 0 / 0.38), 0 6px 18px rgb(0 0 0 / 0.22);
+
+  --radius-card: 6px;
+
+  --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-settle: cubic-bezier(0.34, 1.26, 0.64, 1);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/* The world takes over the whole viewport; nothing scrolls behind it. */
+body[data-surface="night"] {
+  background-color: var(--color-night);
+  color: var(--color-night-ink);
+  color-scheme: dark;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+body[data-surface="night"] :focus-visible {
+  outline-color: var(--color-accent-soft);
+}
+
+@layer utilities {
+  /* Fibrous paper: two crossed noise fields, cheap and resolution-free. */
+  .paper-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: var(--grain-opacity, 0.3);
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+  }
+
+  .safe-top {
+    padding-top: calc(var(--safe-top) + var(--safe-extra, 0px));
+  }
+
+  .safe-bottom {
+    padding-bottom: calc(var(--safe-bottom) + var(--safe-extra, 0px));
+  }
+
+  /* Every interactive element clears 44px regardless of its visual size. */
+  .tap {
+    position: relative;
+  }
+
+  .tap::before {
+    content: "";
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  .hairline {
+    border-color: var(--color-line);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion: journeys still happen, they just stop being cinema.
+   Components read this via the useReducedMotion hook; this is the backstop
+   for anything animated in pure CSS.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes drift-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.drift-in {
+  animation: drift-in 0.7s var(--ease-paper) both;
+}
+
+@keyframes pulse-soft {
+  from {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
 }
