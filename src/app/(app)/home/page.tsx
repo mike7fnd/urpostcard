@@ -69,7 +69,7 @@ export default async function HomePage() {
         <header className="drift-in">
           <Greeting name={profile.display_name || profile.username || ""} />
 
-          <div className="mt-4 space-y-1.5">
+          <div className="mt-1.5 space-y-1">
             {inFlight.length > 0 ? (
               <Line>
                 {inFlight.length} postcard{inFlight.length === 1 ? "" : "s"} of yours
@@ -88,8 +88,6 @@ export default async function HomePage() {
               <Line>Nothing is moving. The world is quiet.</Line>
             ) : null}
           </div>
-
-          <p className="mt-5 text-[12.5px] text-ink-faint">{profile.location_name}</p>
         </header>
 
         <div className="flex flex-col gap-5">

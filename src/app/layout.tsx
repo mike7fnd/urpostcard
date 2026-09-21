@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
 
+import { ServiceWorker } from "@/components/pwa/ServiceWorker";
+
 import "./globals.css";
 
 const inter = Inter({
@@ -21,14 +23,21 @@ export const metadata: Metadata = {
   description:
     "Write a postcard, send it into the world, and watch it travel to someone.",
   applicationName: "urpostcard",
+  // iOS reads these to open from the home screen without Safari chrome.
   appleWebApp: { capable: true, title: "urpostcard", statusBarStyle: "default" },
   formatDetection: { telephone: false, address: false, email: false },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Pinch-zoom left alone on purpose: locking it is an accessibility cost
+  // that an app-like feel does not justify.
+  maximumScale: 5,
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f6f3ec" },
@@ -49,7 +58,10 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${instrument.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <ServiceWorker />
+      </body>
     </html>
   );
 }

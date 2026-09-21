@@ -91,7 +91,26 @@ The sweep is a **backstop**, not the mechanism: every read path also settles
 overdue postcards, so a missed run delays the arrival *notification*, never the
 arrival.
 
-### 6. Run
+### 6. Installing it as an app
+
+urpostcard is a PWA: manifest, icons and a service worker. On Android Chrome it
+offers to install; on iOS it is Share -> Add to Home Screen. Either way it
+opens standalone, with no browser chrome, which is what lets the globe fill
+the screen properly.
+
+Icons are generated, not committed art:
+
+```bash
+npm run icons    # redraws public/icons from the palette
+```
+
+The service worker is deliberately narrow. It caches hashed build output and
+an offline page, and nothing else. **Pages are never cached** — this app is
+almost entirely signed-in personal content, and a page cache is how one
+person’s postcards end up on screen for whoever opens the app next on a
+shared phone.
+
+### 7. Run
 
 ```bash
 npm run dev        # http://localhost:3000

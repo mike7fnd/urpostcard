@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { absoluteUrl } from "@/lib/url";
 
 /**
  * Landing point for every link Supabase emails: confirmation, recovery,
@@ -16,14 +17,14 @@ export async function GET(request: Request) {
   const next = params.get("next");
 
   if (!tokenHash || !type) {
-    return NextResponse.redirect(new URL("/sign-in?error=link_invalid", request.url));
+    return NextResponse.redirect(absoluteUrl(request, "/sign-in?error=link_invalid"));
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
 
   if (error) {
-    return NextResponse.redirect(new URL("/sign-in?error=link_expired", request.url));
+    return NextResponse.redirect(absoluteUrl(request, "/sign-in?error=link_expired"));
   }
 
   const destination =

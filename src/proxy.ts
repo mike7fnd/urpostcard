@@ -6,6 +6,9 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "@/lib/env";
 /** Routes reachable without a session. Everything else requires one. */
 const PUBLIC_PATHS = [
   "/",
+  // Reached with no session by definition: the service worker shows it when
+  // the network is gone.
+  "/offline",
   "/sign-in",
   "/sign-up",
   "/reset-password",
@@ -74,9 +77,13 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Everything except static assets and image files — the session refresh
-     * has no business running for a favicon.
+     * Everything except static assets — the session refresh has no business
+     * running for a favicon.
+     *
+     * sw.js, the manifest and the icons are excluded deliberately: they are
+     * fetched with no session, and redirecting them to sign-in would stop the
+     * app installing at all.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?)$).*)",
   ],
 };

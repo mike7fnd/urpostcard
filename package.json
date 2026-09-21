@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:bundle": "node scripts/bundle-migrations.mjs",
-    "db:verify": "node scripts/verify-setup.mjs"
+    "db:verify": "node scripts/verify-setup.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
