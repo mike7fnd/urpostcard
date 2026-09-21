@@ -368,13 +368,13 @@ export function ProfileView({ profile }: { profile: Profile }) {
               onConfirm={savePlace}
             >
               <div className="flex items-start justify-between gap-4">
-                <h2 className="font-display text-[26px] leading-tight text-ink drop-shadow-[0_1px_10px_rgba(255,255,255,0.85)]">
+                <h2 className="font-display text-[26px] leading-tight text-ink">
                   Where should your postcards find you?
                 </h2>
                 <button
                   type="button"
                   onClick={() => setMovingPin(false)}
-                  className="tap min-h-[44px] shrink-0 rounded-full border border-line/70 bg-paper/90 px-4 text-[14px] text-ink-soft backdrop-blur"
+                  className="tap min-h-[44px] shrink-0 rounded-full border border-line/70 bg-paper/92 px-4 text-[14px] text-ink-soft shadow-lift-sm backdrop-blur transition-colors hover:text-ink"
                 >
                   Cancel
                 </button>

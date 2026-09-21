@@ -203,3 +203,39 @@ body[data-surface="sky"] :focus-visible {
     transform: translateY(-2px);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Status bar
+
+   With apple-mobile-web-app-status-bar-style: black-translucent the page runs
+   under the status bar, so the background is continuous to the top edge —
+   no white strip. The cost is that iOS draws the clock, signal and battery in
+   white there, with no way to ask for dark.
+
+   Most of this app is cream, where white glyphs would vanish. This lays the
+   faintest wash across exactly the status bar's height — enough to hold them,
+   little enough that the page still reads as continuous. It has zero height
+   on devices without an inset, and does not exist in a browser tab, where
+   there is no status bar to worry about.
+   -------------------------------------------------------------------------- */
+.status-veil {
+  display: none;
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .status-veil {
+    display: block;
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: env(safe-area-inset-top, 0px);
+    /* Above every overlay, including the full-screen globe. */
+    z-index: 60;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgb(18 16 11 / 0.34) 0%,
+      rgb(18 16 11 / 0.16) 62%,
+      rgb(18 16 11 / 0) 100%
+    );
+  }
+}

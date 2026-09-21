@@ -216,7 +216,7 @@ function PlaceStep({ profile, onDone }: { profile: Profile; onDone: () => void }
     <div className="relative">
       <LocationPicker onConfirm={save} busy={busy}>
         <div>
-          <h1 className="font-display text-[28px] leading-tight tracking-tight text-ink drop-shadow-[0_1px_10px_rgba(255,255,255,0.85)] sm:text-[32px]">
+          <h1 className="font-display text-[28px] leading-tight tracking-tight text-ink sm:text-[32px]">
             Where should your postcards find you?
           </h1>
           {error ? (

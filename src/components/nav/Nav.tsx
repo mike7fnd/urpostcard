@@ -52,7 +52,7 @@ export function Nav({ unopened = 0 }: { unopened?: number }) {
       {/* ------------------------------------------------ wide screens */}
       <nav
         aria-label="Primary"
-        className="pointer-events-none fixed inset-x-0 top-5 z-40 hidden justify-center px-4 lg:flex"
+        className="safe-top pointer-events-none fixed inset-x-0 top-5 z-40 hidden justify-center px-4 lg:flex"
       >
         <ul className="pointer-events-auto flex items-stretch gap-1 rounded-full border border-line/70 bg-paper/88 px-2 py-1.5 shadow-lift-sm backdrop-blur-md">
           {ITEMS.map(({ href, label, icon: Icon }) => {

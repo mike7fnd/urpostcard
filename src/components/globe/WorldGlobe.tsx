@@ -335,8 +335,8 @@ export default function WorldGlobe({
           pointsData={points}
           pointLat="lat"
           pointLng="lng"
-          pointAltitude={0.012}
-          pointRadius={0.34}
+          pointAltitude={0.008}
+          pointRadius={0.16}
           pointColor={(d: object) =>
             (d as GlobePoint).kind === "destination"
               ? world.marks.destination
@@ -347,9 +347,9 @@ export default function WorldGlobe({
           ringLat="lat"
           ringLng="lng"
           ringColor={() => () => `rgba(${world.marks.ring},0.42)`}
-          ringMaxRadius={2.6}
-          ringPropagationSpeed={0.9}
-          ringRepeatPeriod={2600}
+          ringMaxRadius={1.4}
+          ringPropagationSpeed={0.7}
+          ringRepeatPeriod={3000}
         />
       ) : null}
 

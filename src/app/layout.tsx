@@ -23,8 +23,14 @@ export const metadata: Metadata = {
   description:
     "Write a postcard, send it into the world, and watch it travel to someone.",
   applicationName: "urpostcard",
-  // iOS reads these to open from the home screen without Safari chrome.
-  appleWebApp: { capable: true, title: "urpostcard", statusBarStyle: "default" },
+  // black-translucent puts the page under the status bar instead of leaving a
+  // strip above it, so the background runs to the top edge. iOS draws the
+  // clock and icons white over it, which .status-veil keeps legible.
+  appleWebApp: {
+    capable: true,
+    title: "urpostcard",
+    statusBarStyle: "black-translucent",
+  },
   formatDetection: { telephone: false, address: false, email: false },
   icons: {
     icon: "/icons/icon-192.png",
@@ -61,6 +67,7 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         {children}
+        <div className="status-veil" aria-hidden />
         <ServiceWorker />
       </body>
     </html>

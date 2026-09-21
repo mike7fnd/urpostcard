@@ -24,7 +24,8 @@ export default function GlobalError({
           background: "#f6f3ec",
           color: "#16150f",
           fontFamily: "ui-sans-serif, system-ui, sans-serif",
-          padding: "24px",
+          padding:
+            "max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom))",
         }}
       >
         <div style={{ maxWidth: "34ch" }}>

@@ -9,7 +9,7 @@ import type { GlobeApi } from "@/components/globe/WorldGlobe";
 import { Button } from "@/components/ui/Button";
 import { useMapStyle } from "@/components/map/MapStyleProvider";
 import { MAP_CREDITS, PLACES_CREDIT } from "@/lib/attribution";
-import { coarsen } from "@/lib/geo";
+import { angularDistance, coarsen } from "@/lib/geo";
 import type { GeoPlace } from "@/lib/types";
 
 /**
@@ -49,8 +49,50 @@ export function LocationPicker({
   const [pov, setPov] = useState<{ lat: number; lng: number; altitude: number } | null>(
     initial ? { lat: initial.latitude, lng: initial.longitude, altitude: 0.12 } : null,
   );
-  const [, setApi] = useState<GlobeApi | null>(null);
+  const [api, setApi] = useState<GlobeApi | null>(null);
   const requestId = useRef(0);
+  const marker = useRef<HTMLDivElement | null>(null);
+
+  // The pin is a marker over the canvas, not a dot drawn into the globe, so it
+  // stays the size of a pin at every zoom instead of swelling into a blob.
+  const pinAt = useRef<{ lat: number; lng: number } | null>(null);
+  pinAt.current = pin ? { lat: pin.latitude, lng: pin.longitude } : null;
+
+  useEffect(() => {
+    if (!api) return;
+    let frame = 0;
+
+    const place = () => {
+      const el = marker.current;
+      const here = pinAt.current;
+
+      if (el && here) {
+        const camera = api.currentPov();
+        // Hide it when it goes round the back, or it projects through the
+        // planet and floats over the wrong ocean.
+        const horizon = camera
+          ? Math.acos(1 / (1 + Math.max(camera.altitude, 0.001))) + 0.06
+          : Math.PI;
+        const away = camera
+          ? angularDistance(here, { lat: camera.lat, lng: camera.lng })
+          : 0;
+        const screen = away > horizon ? null : api.screenCoords(here.lat, here.lng, 0);
+
+        if (screen) {
+          // -100% so the point of the pin sits on the coordinate, not its middle.
+          el.style.transform = `translate3d(${screen.x}px, ${screen.y}px, 0) translate(-50%, -100%)`;
+          el.style.opacity = "1";
+        } else {
+          el.style.opacity = "0";
+        }
+      }
+
+      frame = requestAnimationFrame(place);
+    };
+
+    frame = requestAnimationFrame(place);
+    return () => cancelAnimationFrame(frame);
+  }, [api]);
 
   /* search, debounced */
   useEffect(() => {
@@ -126,13 +168,43 @@ export function LocationPicker({
           autoRotate={!pin}
           onSelect={dropPin}
           pov={pov}
-          points={
-            pin
-              ? [{ lat: pin.latitude, lng: pin.longitude, kind: "destination" as const }]
-              : []
-          }
+          points={[]}
           onReady={setApi}
         />
+      </div>
+
+      {/*
+        Same treatment as the home screen: the map is held back at the top and
+        bottom so type sits on paper, and left clear through the middle where
+        the pin actually goes. Drop shadows behind text over a blue map was
+        never going to read cleanly.
+      */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[34%]"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(246,243,236,0.97) 0%, rgba(246,243,236,0.72) 46%, rgba(246,243,236,0) 100%)",
+        }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
+        style={{
+          background:
+            "linear-gradient(0deg, rgba(246,243,236,0.97) 0%, rgba(246,243,236,0.74) 44%, rgba(246,243,236,0) 100%)",
+        }}
+        aria-hidden
+      />
+
+      {/* the pin itself */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div
+          ref={marker}
+          className="absolute left-0 top-0 opacity-0 will-change-transform"
+          style={{ display: pin ? undefined : "none" }}
+        >
+          <MapPin />
+        </div>
       </div>
 
       {/* top: prompt and search */}
@@ -196,7 +268,7 @@ export function LocationPicker({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 24 }}
                 transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
-                className="rounded-3xl border border-line/70 bg-paper/95 p-5 shadow-lift backdrop-blur"
+                className="rounded-3xl border border-line/70 bg-paper/96 p-5 shadow-lift-lg backdrop-blur"
               >
                 <p className="text-[12px] uppercase tracking-[0.16em] text-ink-faint">
                   Your postcards arrive at
@@ -204,7 +276,7 @@ export function LocationPicker({
                 <p className="mt-1.5 font-display text-[24px] leading-tight text-ink">
                   {naming ? "…" : pin.name || "An unnamed place"}
                 </p>
-                <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">
+                <p className="mt-3 text-[12.5px] leading-relaxed text-ink-faint">
                   Others will only ever see this name. The pin is rounded to about
                   a kilometre and used to work out how far a postcard has to travel.
                 </p>
@@ -221,7 +293,7 @@ export function LocationPicker({
                   </Button>
                   <Button
                     variant="ghost"
-                    className="text-ink-soft hover:text-ink"
+                    className="shrink-0 text-ink-soft hover:text-ink"
                     onClick={() => setPin(null)}
                   >
                     Move it
@@ -234,7 +306,7 @@ export function LocationPicker({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="pb-2 text-center text-[14px] text-ink drop-shadow-[0_1px_6px_rgba(255,255,255,0.9)]"
+                className="pb-1 text-center text-[14.5px] leading-relaxed text-ink-soft"
               >
                 Turn the globe and tap where you are, or search above.
               </motion.p>
@@ -243,11 +315,39 @@ export function LocationPicker({
 
           {/* Rendered here rather than by the globe, where the bottom sheet
               would cover it once a pin is dropped. */}
-          <p className="mt-3 text-center text-[11px] leading-relaxed text-ink-soft/80">
+          <p className="mt-3 text-center text-[11px] leading-relaxed text-ink-faint">
             {MAP_CREDITS[mapStyle]} · {PLACES_CREDIT}
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * An ordinary map pin: small, with its point on the spot and a shadow on the
+ * ground beneath it. Drawn at a fixed pixel size rather than in globe units,
+ * so zooming in does not turn it into a red balloon.
+ */
+function MapPin() {
+  return (
+    <span className="block">
+      <svg
+        viewBox="0 0 24 32"
+        className="h-[30px] w-[22px]"
+        style={{ filter: "drop-shadow(0 3px 4px rgb(0 0 0 / 0.35))" }}
+        aria-hidden
+        focusable="false"
+      >
+        <path
+          d="M12 1.6c-5 0-9 3.9-9 8.8 0 6.2 7.7 13.9 8.6 20 .07.5.73.5.8 0C13.3 24.3 21 16.6 21 10.4c0-4.9-4-8.8-9-8.8Z"
+          fill="#a8563c"
+          stroke="#ffffff"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="10.2" r="3.1" fill="#ffffff" opacity="0.92" />
+      </svg>
+    </span>
   );
 }
