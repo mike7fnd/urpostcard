@@ -9,6 +9,19 @@ function required(name: string, value: string | undefined): string {
   return value;
 }
 
+/**
+ * Whether the app has enough to talk to Supabase at all.
+ *
+ * Checked before anything constructs a client, so a deployment with missing
+ * variables can say so plainly instead of throwing inside the proxy and
+ * turning every single route — including the front page — into a blank 500.
+ */
+export const supabaseConfigured = () =>
+  Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+
 export const SUPABASE_URL = () =>
   required("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
 

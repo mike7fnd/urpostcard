@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/env";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "@/lib/env";
 
 /** Routes reachable without a session. Everything else requires one. */
 const PUBLIC_PATHS = [
@@ -21,6 +21,12 @@ function isPublic(pathname: string) {
 }
 
 export async function proxy(request: NextRequest) {
+  // Without Supabase configured there are no sessions to refresh and nothing
+  // to protect. Throwing here would 500 every route in the deployment,
+  // including the page that explains what is missing — so step aside and let
+  // it render.
+  if (!supabaseConfigured()) return NextResponse.next({ request });
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(SUPABASE_URL(), SUPABASE_ANON_KEY(), {

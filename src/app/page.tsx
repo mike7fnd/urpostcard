@@ -2,9 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LandingCard } from "@/components/landing/LandingCard";
+import { supabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function LandingPage() {
+  // A deployment missing its Supabase variables should say so, not fail with
+  // a blank 500 on the one page someone lands on first.
+  if (!supabaseConfigured()) return <NotConfigured />;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -62,6 +67,53 @@ export default async function LandingPage() {
       <footer className="text-[12px] text-ink-faint">
         Distances are real. Places are approximate, on purpose.
       </footer>
+    </main>
+  );
+}
+
+/**
+ * Shown when NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY are absent — which on a
+ * fresh deployment means nobody copied .env.local into the host, since that
+ * file is deliberately git-ignored.
+ */
+function NotConfigured() {
+  const missing = [
+    !process.env.NEXT_PUBLIC_SUPABASE_URL && "NEXT_PUBLIC_SUPABASE_URL",
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    !process.env.SUPABASE_SERVICE_ROLE_KEY && "SUPABASE_SERVICE_ROLE_KEY",
+  ].filter(Boolean) as string[];
+
+  return (
+    <main className="safe-top safe-bottom mx-auto flex min-h-dvh w-full max-w-[520px] flex-col justify-center px-6 py-10">
+      <p className="text-[13px] uppercase tracking-[0.22em] text-ink-soft">
+        urpostcard
+      </p>
+
+      <h1 className="mt-8 font-display text-[30px] leading-tight tracking-tight text-ink">
+        Not connected yet.
+      </h1>
+
+      <p className="mt-3 max-w-[42ch] text-[15px] leading-relaxed text-ink-soft">
+        This deployment has no Supabase credentials. They live in{" "}
+        <code className="font-mono text-[13.5px] text-ink">.env.local</code>,
+        which is git-ignored on purpose, so they have to be set on the host as
+        well.
+      </p>
+
+      <ul className="mt-7 space-y-2 border-y border-line/70 py-5">
+        {missing.map((name) => (
+          <li key={name} className="flex items-center gap-2.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+            <code className="font-mono text-[13px] text-ink">{name}</code>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-6 max-w-[42ch] text-[13.5px] leading-relaxed text-ink-faint">
+        On Vercel: Project → Settings → Environment Variables. Add them to
+        Production, then redeploy — variables are read at build time, so
+        existing deployments will not pick them up.
+      </p>
     </main>
   );
 }

@@ -62,17 +62,36 @@ In **Authentication → URL Configuration**, add your site URL and both
 `<site>/auth/confirm` and `<site>/auth/callback` as redirect URLs. Emailed
 links land on the first; Google lands on the second.
 
-### 4. Delivery sweep
+### 4. Deploying
+
+**Set the environment variables on the host.** `.env.local` is git-ignored, so
+nothing in it reaches a deployment. On Vercel: Project → Settings →
+Environment Variables, add them to Production, then **redeploy** — the
+`NEXT_PUBLIC_` ones are inlined at build time, so an existing deployment will
+not pick them up.
+
+If they are missing the app does not fall over: the front page names the
+absent variables and every guarded route redirects to it.
+
+Also add the deployed origin to **Authentication → URL Configuration** in
+Supabase (site URL, plus `/auth/confirm` and `/auth/callback`), or emailed
+links and Google sign-in will bounce back to localhost.
+
+### 5. Delivery sweep
 
 `vercel.json` schedules `/api/cron/deliver` every five minutes. On Vercel, set
 `CRON_SECRET` and the schedule is picked up automatically; anywhere else, call
 that route on a timer with `Authorization: Bearer $CRON_SECRET`.
 
+**Vercel Hobby only runs crons once a day.** If the schedule is rejected,
+change it to something daily or drop `vercel.json` entirely — see below for
+why that is survivable.
+
 The sweep is a **backstop**, not the mechanism: every read path also settles
 overdue postcards, so a missed run delays the arrival *notification*, never the
 arrival.
 
-### 5. Run
+### 6. Run
 
 ```bash
 npm run dev        # http://localhost:3000

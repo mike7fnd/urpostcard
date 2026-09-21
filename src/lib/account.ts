@@ -2,6 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
+import { supabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 
@@ -26,6 +27,11 @@ export function profileIsComplete(profile: Profile | null): boolean {
 
 /** Session plus profile, or a redirect to sign-in. */
 export async function requireSession(nextPath?: string): Promise<Session> {
+  // Nothing behind the door can work without Supabase. Send them to the front
+  // page, which explains what is missing, rather than throwing an unhelpful
+  // 500 from whichever guarded route they happened to open.
+  if (!supabaseConfigured()) redirect("/");
+
   const supabase = await createClient();
   const {
     data: { user },
