@@ -71,11 +71,14 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* The world takes over the whole viewport; nothing scrolls behind it. */
-body[data-surface="night"] {
-  background-color: var(--color-night);
-  color: var(--color-night-ink);
-  color-scheme: dark;
+/*
+ * Set by <SurfaceTheme>. It exists for the strip above the content in an
+ * installed iOS app, which takes the colour of the body rather than of the
+ * element filling the screen — so a full-bleed globe needs the body to be sky
+ * too, or it gets a cream band across the top.
+ */
+body[data-surface="sky"] {
+  background-color: var(--color-sky-high);
 }
 
 ::selection {
@@ -88,8 +91,8 @@ body[data-surface="night"] {
   border-radius: 2px;
 }
 
-body[data-surface="night"] :focus-visible {
-  outline-color: var(--color-accent-soft);
+body[data-surface="sky"] :focus-visible {
+  outline-color: #ffffff;
 }
 
 @layer utilities {

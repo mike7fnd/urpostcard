@@ -39,10 +39,11 @@ export const viewport: Viewport = {
   // that an app-like feel does not justify.
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f3ec" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0b0d" },
-  ],
+  // Paper, unconditionally. There is no dark theme any more, and declaring a
+  // dark variant left phones in dark mode with a black status bar above a
+  // cream app. Screens that are not paper override this at runtime via
+  // <SurfaceTheme>.
+  themeColor: "#f6f3ec",
 };
 
 // Typed explicitly rather than with Next's generated `LayoutProps`, which only

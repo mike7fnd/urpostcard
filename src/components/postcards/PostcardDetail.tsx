@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 
 import { JourneyGlobe } from "@/components/globe/JourneyGlobe";
 import { Postcard } from "@/components/postcard/Postcard";
+import { SurfaceTheme } from "@/components/pwa/SurfaceTheme";
 import { useNow } from "@/hooks/useNow";
 import {
   formatCountdown,
@@ -172,6 +173,7 @@ export function PostcardDetail({ card }: { card: PostcardView }) {
             transition={{ duration: 0.5 }}
             className="sky fixed inset-0 z-50"
           >
+            <SurfaceTheme surface="sky" />
             <JourneyGlobe
               card={card}
               mode={overlay === "replay" ? "replay" : "observe"}

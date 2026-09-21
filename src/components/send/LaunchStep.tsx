@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { JourneyGlobe } from "@/components/globe/JourneyGlobe";
+import { SurfaceTheme } from "@/components/pwa/SurfaceTheme";
 import { formatCountdown, formatDistance } from "@/lib/delivery";
 import type { PostcardView } from "@/lib/types";
 
@@ -29,6 +30,7 @@ export function LaunchStep({ card }: { card: PostcardView }) {
 
   return (
     <div className="sky fixed inset-0 z-50">
+      <SurfaceTheme surface="sky" />
       <JourneyGlobe card={card} mode="launch" />
 
       <motion.div

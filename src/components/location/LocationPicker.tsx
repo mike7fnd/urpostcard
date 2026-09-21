@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GlobeStage } from "@/components/globe/GlobeStage";
+import { SurfaceTheme } from "@/components/pwa/SurfaceTheme";
 import type { GlobeApi } from "@/components/globe/WorldGlobe";
 import { Button } from "@/components/ui/Button";
 import { useMapStyle } from "@/components/map/MapStyleProvider";
@@ -109,6 +110,8 @@ export function LocationPicker({
 
   return (
     <div className="sky relative h-dvh w-full overflow-hidden">
+      <SurfaceTheme surface="sky" />
+
       <div className="absolute inset-0">
         <GlobeStage
           interactive

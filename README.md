@@ -104,6 +104,17 @@ Icons are generated, not committed art:
 npm run icons    # redraws public/icons from the palette
 ```
 
+**The status bar follows the screen.** Android takes it from
+`<meta name="theme-color">`; iOS, in standalone, paints the strip above the
+content with the colour of the *body*. So `<SurfaceTheme surface="sky">` sets
+both, and full-bleed globe screens declare it. Screens that do not are paper,
+which is right for all of them.
+
+iOS is kept on `default` rather than `black-translucent`. Translucent would
+put content under the status bar, but iOS draws its text white there, and most
+of this app is cream — the clock would vanish. Switch it in `layout.tsx` if
+you would rather have the overlay.
+
 The service worker is deliberately narrow. It caches hashed build output and
 an offline page, and nothing else. **Pages are never cached** — this app is
 almost entirely signed-in personal content, and a page cache is how one
